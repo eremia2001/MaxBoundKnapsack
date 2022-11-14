@@ -42,6 +42,7 @@ class MaxBoundKnapsack {
                         itemStringData = trimmedItemData.split(" ");
                         // Init Item with data
                         initItem(itemStringData, itemData, item);
+                        item.profit = (double) item.cost / item.size;
                         items.add(item);
 
                         break;
@@ -56,19 +57,15 @@ class MaxBoundKnapsack {
             e.printStackTrace();
         }
         // Sort the List
+        Collections.sort(items);
         // Initiallisieren des Rucksacks
-
-        sortItems();
         knapsack = new Knapsack(capacity);
+        // Optimalwert mit Greedy-Algorithmus - erste untere Schranke
 
-        greedyAlg();
+        branchNBound();
 
-        for (Item i : knapsack.bagItems) {
-            System.out.println(i);
-        }
-
-        System.out.println("Kapazitaet beträgt : " + knapsack.capacity);
-        System.out.println("Gesamtkosten betragen : " + knapsack.totalCost);
+        // System.out.println("Kapazitaet beträgt : " + knapsack.capacity);
+        // System.out.println("Gesamtkosten betragen : " + knapsack.totalCost);
 
         // Starte Timer
         long start = System.currentTimeMillis();
@@ -103,61 +100,68 @@ class MaxBoundKnapsack {
                     break;
             }
         }
+
     }
 
-    // Ordne die Items in der Liste auf Basis der Kosten
-    public static void sortItems() {
-
-        int prevNumber;
-        int currentNumber;
-
-        for (int i = 1; i < items.size(); i++) {
-            currentNumber = items.get(i).cost;
-            prevNumber = i - 1;
-
-            while (prevNumber >= 0 && items.get(prevNumber).cost > currentNumber) {
-                items.get(prevNumber + 1).cost = items.get(prevNumber).cost;
-                prevNumber = prevNumber - 1;
-            }
-            items.get(prevNumber + 1).cost = currentNumber;
-        }
-    }
-
-    public static void greedyAlg() {
+    public static int greedyAlg() {
         // wir fangen mit dem Item mit den größten Kosten
         // packen ihn solange rein bis entweder :
         // die kapazität des Rucksacks voll ist oder
         // es keine Items mehr gibt
-
+        // nimmt eine Kopie vom Knapsackproblem
+        Knapsack greedyKnapsack = new Knapsack(knapsack.capacity);
+        boolean itemAdded = false;
         Item currentItem;
-        for (int i = items.size() - 1; i > 0; i--) { // beginnt ab den grö0ten Gegenstand
+        for (int i = items.size() - 1; i > 0; i--) { // beginnt ab den größten Gegenstand
             currentItem = items.get(i);
-            while (knapsack.capacity > 0 && currentItem.quantity > 0) {
+            while (greedyKnapsack.capacity > 0 && currentItem.quantity > 0) {
                 // packt ein Item in Rucksack, falls es reinpasst
-                if (isFitting(i)) {
-                    currentItem.quantity -= 1;
-                    knapsack.bagItems.add(currentItem);
-                    knapsack.capacity -= currentItem.size; // Kapazität wird kleiner gemacht
-                    knapsack.totalCost += currentItem.cost; // die Gesamtkosten werden dazuaddiert
-                } else {
+                itemAdded = greedyKnapsack.addItem(currentItem);
+                if (!itemAdded) {
                     break;
                 }
-
             }
-
         }
 
+        System.out.println(
+                "Greedy Kosten: " + greedyKnapsack.totalCost + " Greedy Kapazitaet: " +
+                        greedyKnapsack.capacity);
+
+        return greedyKnapsack.totalCost;
     }
 
-    // Überprüft ob es noch reinpasst von der Größe UND der Quantität her
-    public static boolean isFitting(int itemIndex) {
-        int diff = knapsack.capacity - items.get(itemIndex).size;
-        int itemQuant = items.get(itemIndex).quantity;
+    public static int branchNBound() {
+        int lowerBound = greedyAlg(); // mit Greedy untere Grenze berechnet
+        ArrayList<Item> knapsackBag = knapsack.bagItems;
+        Item currentItem;
+        boolean itemAdded = false;
 
-        if (diff > 0 && itemQuant > 0) {
-            return true;
+        for (int i = knapsackBag.size() - 1; i > 0; i--) {
+            currentItem = items.get(i);
+            while (knapsack.capacity > 0 && currentItem.quantity > 0) {
+                itemAdded = knapsack.addItem(currentItem);
+                if (!itemAdded && currentItem.quantity > 0) {
+                    break;
+                }
+            }
         }
-        return false;
+        return knapsack.totalCost;
     }
+
+    // Jedes Teilproblem ist eine neue Instanz von Knapsack
+    // Rekursive Funktion :
+    // Gegeben ist ein Knapsack
+    // mit diesen Belegungen soll es den optimale zustzäliche Belegungen rausfinden
+    // Wenn eine Kommazahl, da ist soll ein rekursiv das Problem teilen
+    // Und das Problem verzweigen in der Kommazahl für die Nächst-Größere bzw.
+    // Kleinere Zahl
+
+    // TODO: Greedy-Algorithmus benutzt die gleichen items wie Branch n Bound -> das
+    // führt dazu, dass der Branch-Algorithmus verfälschte Daten benutzt
+    // TODO: Gesamtkapazität als globale Variable speichern.
+    // TODO: Zeile 143 vervollständingen : Da wollte ich, dass wenn eine ganze Zahl
+    // nicht ganz rein passt, dass diese geborchen wird und gucken wie oft es im
+    // Bruchteil reinpasst.
+    // dieses Item speichere ich dann mit der NEUEN Größe rein ! .
 
 }

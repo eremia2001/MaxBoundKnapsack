@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch MaxBoundKnapsack",
+            "request": "launch",
+            "mainClass": "MaxBoundKnapsack",
+            "projectName": "MaxBoundKnapsack_c0dcacda"
+        },
+        {
+            "type": "java",
             "name": "Launch Current File",
             "request": "launch",
             "mainClass": "${file}"
